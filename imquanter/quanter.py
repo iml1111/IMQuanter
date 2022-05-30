@@ -4,9 +4,10 @@ Quanter Main Module
 from typing import List, Union, Optional
 from pandas import DataFrame
 from tinydb import TinyDB
-from imquanter.model import Price, Statement
 import FinanceDataReader as fdr
-from imquanter.config import ALL_SYMBOLS
+from imquanter.model import Price, Statement
+from imquanter.util import get_all_kospi
+
 
 
 class Quanter:
@@ -15,15 +16,16 @@ class Quanter:
         self._path = path
         self._db = TinyDB(path)
         # models
-        self._price = Price(db=self._db)
-        self._statement = Statement(db=self._db)
+        self.price = Price(db=self._db)
+        self.statement = Statement(db=self._db)
 
     def collect(
             self,
             start_date: Optional[str] = None,
             end_date: Optional[str] = None,
             targets: Optional[List[str]] = None,
-            symbols: Optional[List[str]] = None):
+            symbols: Optional[List[str]] = None,
+            dry: bool = True):
         """
         # 해당 종목들에 대하여, 수집할 데이터를 추출하여 DB에 저장
         :param start_date: 수집 시작 날짜
@@ -34,7 +36,7 @@ class Quanter:
         """
         # Default arguments
         targets = targets if targets else ('price', 'financial_statement')
-        symbols = symbols if symbols else ALL_SYMBOLS
+        symbols = symbols if symbols else get_all_kospi(dry=dry)
 
         # 타겟 종목들의 데이터를 불러와 DB에 upsert
         if 'price' in targets:
@@ -55,7 +57,7 @@ class Quanter:
                 end=end_date)
             records: dict = df.to_dict(orient='index')
             for date, record in records.items():
-                self._price.upsert_price({
+                self.price.upsert_price({
                     'symbol': symbol,
                     'date': date.strftime('%Y-%m-%d'),
                     **record,
@@ -85,10 +87,11 @@ class Quanter:
         :param symbols: 종목 코드 리스트
         :param start_date: 시작 날짜 (Ex. 2000-01-01)
         :param end_date: 마감 날짜 (Ex. 2022-01-01)
-        :return: DataFrame(symbol, date, Open, High, Low, Close, Volume, Change)
+        :return: DataFrame(
+            symbol, date, Open, High, Low, Close, Volume, Change)
         """
         symbols = [symbols] if isinstance(symbols, str) else symbols
-        result = self._price.search_price(
+        result = self.price.search_price(
             symbols=symbols,
             start_date=start_date,
             end_date=end_date)
