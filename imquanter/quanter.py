@@ -5,19 +5,20 @@ from typing import List, Union, Optional
 from pandas import DataFrame
 from tinydb import TinyDB
 import FinanceDataReader as fdr
-from imquanter.model import Price, Statement
-from imquanter.util import get_all_kospi
-
+from imquanter.model import Price, Statement, Log
+from imquanter.util import get_all_kospi, log
+from imquanter.scraper import IncomeStatementScraper
 
 
 class Quanter:
 
     def __init__(self, path='./db.json'):
-        self._path = path
-        self._db = TinyDB(path)
+        self.path = path
+        self.db = TinyDB(path)
         # models
-        self.price = Price(db=self._db)
-        self.statement = Statement(db=self._db)
+        self.price = Price(db=self.db)
+        self.statement = Statement(db=self.db)
+        self.log = Log(db=self.db)
 
     def collect(
             self,
@@ -51,6 +52,13 @@ class Quanter:
             end_date: Optional[str] = None):
         symbols = [symbols] if isinstance(symbols, str) else symbols
         for symbol in symbols:
+            # 이미 수집한 적이 있을 경우, 스킵...
+            if self.log.already_collect(symbol, start_date, end_date):
+                log(
+                    f"[{symbol}]({start_date or ''}~{end_date or ''})"
+                    " Already collected, Skip...")
+                continue
+
             df: DataFrame = fdr.DataReader(
                 symbol=symbol,
                 start=start_date,
@@ -62,6 +70,7 @@ class Quanter:
                     'date': date.strftime('%Y-%m-%d'),
                     **record,
                 })
+                self.log.log_collect(symbol, start_date, end_date)
 
     def _collect_statement(
             self,
@@ -75,7 +84,8 @@ class Quanter:
         :param end_date: 마감 날짜 (Ex. 2022-01-01)
         :return: None
         """
-        return None
+        # TODO Required?
+        scraper = IncomeStatementScraper()
 
     def get_price(
             self,

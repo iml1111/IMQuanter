@@ -64,3 +64,32 @@ class Price(BaseModel):
 
 class Statement(BaseModel):
     pass
+
+
+class Log(BaseModel):
+
+    def log_collect(
+            self,
+            symbol: str,
+            start_date: Optional[str] = None,
+            end_date: Optional[str] = None):
+        self.insert_one({
+            'action': 'collect',
+            'symbol': symbol,
+            'start_date': start_date,
+            'end_date': end_date
+        })
+
+    def already_collect(
+            self,
+            symbol: str,
+            start_date: Optional[str] = None,
+            end_date: Optional[str] = None):
+        Q = Query()
+        result = self._table.search(
+            (Q.action == 'collect')
+            & (Q.symbol == symbol)
+            & (Q.start_date == start_date)
+            & (Q.end_date == end_date))
+        return bool(result)
+

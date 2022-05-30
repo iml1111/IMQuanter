@@ -28,3 +28,4 @@ class IncomeStatementScraper:
         years = soup.select_one('div#divSonikY')
         quaters = soup.select_one('div#divSonikQ')
         soups = [('Y', years), ('Q', quaters)]
+

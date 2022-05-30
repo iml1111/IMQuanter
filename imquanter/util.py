@@ -16,7 +16,6 @@ def get_all_kospi(dry=True):
             '005930', # 삼성전자
             '066570', # 엘지전자
         ]
-
     # All KOSPI Symbols
     stocks = fdr.StockListing('KOSPI')
     stocks: dict = stocks.to_dict(orient='index')
@@ -24,6 +23,10 @@ def get_all_kospi(dry=True):
     for record in stocks.values():
         results.append(record['Symbol'])
     return results
+
+
+def log(*args):
+    print('[IMQuanter]', *args)
 
 
 if __name__ == '__main__':
