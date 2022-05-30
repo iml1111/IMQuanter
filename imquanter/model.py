@@ -5,7 +5,10 @@ from datetime import datetime
 
 
 class BaseModel(metaclass=ABCMeta):
-    """Model Interface"""
+    """
+    Model Interface
+    # https://tinydb.readthedocs.io/en/latest/api.html#tinydb-table
+    """
 
     def __init__(self, db: TinyDB):
         self._db = db
