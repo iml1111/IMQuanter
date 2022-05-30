@@ -36,7 +36,7 @@ class Quanter:
         targets = targets if targets else ('price', 'financial_statement')
         symbols = symbols if symbols else ALL_SYMBOLS
 
-        # 타겟 종목들 불러와 DB에 upsert
+        # 타겟 종목들의 데이터를 불러와 DB에 upsert
         if 'price' in targets:
             self._collect_price(symbols, start_date, end_date)
         if 'financial_statement' in targets:
@@ -61,6 +61,20 @@ class Quanter:
                     **record,
                 })
 
+    def _collect_statement(
+            self,
+            symbols: Union[str, List[str]],
+            start_date: Optional[str] = None,
+            end_date: Optional[str] = None):
+        """
+        # 해당 종목들에 대하여, 수집할 데이터를 추출하여 DB에 저장
+        :param symbols: 종목 코드 리스트
+        :param start_date: 시작 날짜 (Ex. 2000-01-01)
+        :param end_date: 마감 날짜 (Ex. 2022-01-01)
+        :return: None
+        """
+        return None
+
     def get_price(
             self,
             symbols: Union[str, List[str]],
@@ -80,19 +94,7 @@ class Quanter:
             end_date=end_date)
         return DataFrame(result)
 
-    def _collect_statement(
-            self,
-            symbols: Union[str, List[str]],
-            start_date: Optional[str] = None,
-            end_date: Optional[str] = None):
-        """
-        # 해당 종목들에 대하여, 수집할 데이터를 추출하여 DB에 저장
-        :param symbols: 종목 코드 리스트
-        :param start_date: 시작 날짜 (Ex. 2000-01-01)
-        :param end_date: 마감 날짜 (Ex. 2022-01-01)
-        :return: None
-        """
-        return None
+
 
 
 
