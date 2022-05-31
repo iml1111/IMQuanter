@@ -7,7 +7,6 @@ from tinydb import TinyDB
 import FinanceDataReader as fdr
 from imquanter.model import Price, Statement, Log
 from imquanter.util import get_all_kospi, log
-from imquanter.scraper import IncomeStatementScraper
 
 
 class Quanter:
@@ -37,6 +36,7 @@ class Quanter:
         """
         # Default arguments
         targets = targets if targets else ('price', 'financial_statement')
+        symbols = None if symbols == 'all' else symbols
         symbols = symbols if symbols else get_all_kospi(dry=dry)
 
         # 타겟 종목들의 데이터를 불러와 DB에 upsert
@@ -56,13 +56,13 @@ class Quanter:
             if self.log.already_collect(symbol, start_date, end_date):
                 log(
                     f"[{symbol}]({start_date or ''}~{end_date or ''})"
-                    " Already collected, Skip...")
+                    " 이미 수집되어 작업을 스킵합니다...")
                 continue
 
             df: DataFrame = fdr.DataReader(
-                symbol=symbol,
-                start=start_date,
-                end=end_date)
+                                    symbol=symbol,
+                                    start=start_date,
+                                    end=end_date)
             records: dict = df.to_dict(orient='index')
             for date, record in records.items():
                 self.price.upsert_price({
@@ -84,8 +84,7 @@ class Quanter:
         :param end_date: 마감 날짜 (Ex. 2022-01-01)
         :return: None
         """
-        # TODO Required?
-        scraper = IncomeStatementScraper()
+        pass
 
     def get_price(
             self,
@@ -102,9 +101,9 @@ class Quanter:
         """
         symbols = [symbols] if isinstance(symbols, str) else symbols
         result = self.price.search_price(
-            symbols=symbols,
-            start_date=start_date,
-            end_date=end_date)
+                                symbols=symbols,
+                                start_date=start_date,
+                                end_date=end_date)
         return DataFrame(result)
 
 
