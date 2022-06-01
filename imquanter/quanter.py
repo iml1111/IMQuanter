@@ -6,14 +6,15 @@ from pandas import DataFrame
 from tqdm import tqdm
 import MySQLdb as mysql
 import FinanceDataReader as fdr
+from imquanter.finance_statement import Dart
 from imquanter.model import Price, Statement, Log
-from imquanter.util import get_all_kospi, log
+from imquanter.util import get_all_kospi, log, get_quarter, get_quarter_sequence, now_date
 from imquanter.uri import URI
 
 
 class Quanter:
 
-    def __init__(self, db_uri: str):
+    def __init__(self, db_uri: str, dart_api_key: str):
         self.uri = URI(uri=db_uri)
         self.db = mysql.connect(
             host=self.uri.hostname,
@@ -23,16 +24,17 @@ class Quanter:
             db=self.uri.dbname,
             charset='utf8',
             cursorclass=mysql.cursors.DictCursor,
-            autocommit=True
-        )
+            autocommit=True)
+        self.dart = Dart(api_key=dart_api_key)
         # models
         self.price = Price(db=self.db)
-        #self.statement = Statement(db=self.db)
+        self.statement = Statement(db=self.db)
         self.log = Log(db=self.db)
+
 
     def collect(
             self,
-            start_date: Optional[str] = None,
+            start_date: Optional[str],
             end_date: Optional[str] = None,
             targets: Optional[List[str]] = None,
             symbols: Optional[List[str]] = None,
@@ -55,19 +57,21 @@ class Quanter:
             self._collect_price(symbols, start_date, end_date)
         if 'financial_statement' in targets:
             self._collect_statement(symbols, start_date, end_date)
+        log('# 수집 완료!')
 
     def _collect_price(
             self,
             symbols: Union[str, List[str]],
-            start_date: Optional[str] = None,
+            start_date: str,
             end_date: Optional[str] = None):
         symbols = [symbols] if isinstance(symbols, str) else symbols
+        log('# 주가 정보 수집 개시...')
         for symbol in tqdm(symbols):
-            # 이미 수집한 적이 있을 경우, 스킵...
-            if self.log.already_collect(symbol, start_date, end_date):
-                log(
-                    f"[{symbol}]({start_date or ''}~{end_date or ''})"
-                    " 이미 수집되어 작업을 스킵...")
+            if self.log.already_exists(
+                    'collect_price',
+                    symbol, start_date, end_date):
+                log(f"[{symbol}]({start_date or ''}~{end_date or ''})"
+                    " 주가 정보가 이미 존재하여 스킵...")
                 continue
             df: DataFrame = fdr.DataReader(
                                     symbol=symbol,
@@ -80,12 +84,13 @@ class Quanter:
                     'date': date.strftime('%Y-%m-%d'),
                     **record,
                 })
-            self.log.log_collect(symbol, start_date, end_date)
+            self.log.log_action(
+                'collect_price', symbol, start_date, end_date)
 
     def _collect_statement(
             self,
             symbols: Union[str, List[str]],
-            start_date: Optional[str] = None,
+            start_date: str,
             end_date: Optional[str] = None):
         """
         # 해당 종목들에 대하여, 수집할 데이터를 추출하여 DB에 저장
@@ -94,7 +99,26 @@ class Quanter:
         :param end_date: 마감 날짜 (Ex. 2022-01-01)
         :return: None
         """
-        pass
+        symbols = [symbols] if isinstance(symbols, str) else symbols
+        end_date = end_date if end_date else now_date()
+        sequence = get_quarter_sequence(start_date, end_date)
+
+        log('# 재무제표 수집 개시...')
+        for symbol in tqdm(symbols):
+            if self.log.already_exists(
+                    'collect_statement',
+                    symbol, start_date, end_date):
+                log(f"[{symbol}]({start_date or ''}~{end_date or ''})"
+                    " 재무제표가 이미 존재하여 스킵...")
+                continue
+            for year, quarter in sequence:
+                report = self.dart.get_report(
+                                    symbol=symbol,
+                                    year=year,
+                                    quarter=quarter)
+                self.statement.upsert_statement(report)
+            self.log.log_action(
+                'collect_statement', symbol, start_date, end_date)
 
     def get_price(
             self,

@@ -27,7 +27,7 @@ def get_all_kospi(dry=True):
 
 
 def log(*args):
-    print('[IMQuanter]', *args)
+    print('\n[IMQuanter]', *args)
 
 
 def get_quarter(date_str: str):
@@ -36,5 +36,25 @@ def get_quarter(date_str: str):
     return f"Q{div + 1}"
 
 
+def get_quarter_sequence(start_date: str, end_date: str):
+    year = int(start_date[:4])
+    quarter = int(get_quarter(start_date)[1:])
+    end_year = int(end_date[:4])
+    end_quarter = int(get_quarter(end_date)[1:])
+    sequence = []
+    while (year, quarter) <= (end_year, end_quarter):
+        sequence.append((str(year), f'Q{quarter}'))
+        if quarter < 4:
+            quarter += 1
+        else:
+            year += 1
+            quarter = 1
+    return sequence
+
+
+def now_date():
+    return datetime.now().strftime('%Y-%m-%d')
+
+
 if __name__ == '__main__':
-    print(get_quarter('2020-07-01'))
+    print(get_quarter_sequence('2020-03-01', '2020-12-01'))

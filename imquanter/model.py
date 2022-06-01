@@ -7,6 +7,7 @@ from imquanter.util import get_quarter
 
 class BaseModel(metaclass=ABCMeta):
     """Model Interface"""
+    # TODO 디렉터리 구조화시키기
     TABLE_QUERY = None
 
     def __init__(self, db: Connection):
@@ -32,12 +33,13 @@ class Price(BaseModel):
 
     TABLE_QUERY = """
     CREATE TABLE IF NOT EXISTS %s (
-        `symbol` VARCHAR(100) NOT NULL,
-        `date` VARCHAR(100) NOT NULL,
+        `symbol` VARCHAR(20) NOT NULL,
+        `date` VARCHAR(20) NOT NULL,
         `open` BIGINT NOT NULL,
         `close` BIGINT NOT NULL,
         `high` BIGINT NOT NULL,
         `low` BIGINT NOT NULL,
+        `year` VARCHAR(10) NOT NULL,
         `quarter` VARCHAR (10) NOT NULL,
         PRIMARY KEY (`symbol`, `date`)
     )
@@ -46,15 +48,16 @@ class Price(BaseModel):
     def upsert_price(self, document: dict):
         query = f"""
         REPLACE INTO {self.table} (
-            `symbol`, `date`, `quarter`,
+            `symbol`, `date`, `year`, `quarter`,
             `open`, `close`, `high`, `low`
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
         """
         with self._db.cursor() as cursor:
             cursor.execute(query,(
                 document['symbol'],
                 document['date'],
+                document['date'][:4],
                 get_quarter(document['date']),
                 document['Open'],
                 document['Close'],
@@ -80,7 +83,42 @@ class Price(BaseModel):
         return result
 
 class Statement(BaseModel):
-    TABLE_QUERY = "TODO"
+
+    TABLE_QUERY = """
+    CREATE TABLE IF NOT EXISTS %s (
+        `symbol` VARCHAR(20) NOT NULL,
+        `year` VARCHAR(10) NOT NULL,
+        `quarter` VARCHAR (10) NOT NULL,
+        `assets` BIGINT NOT NULL,
+        `equity` BIGINT NOT NULL,
+        `liability` BIGINT NOT NULL,
+        `profit` BIGINT NOT NULL,
+        `total_stocks` BIGINT,
+        PRIMARY KEY (`symbol`, `year`, `quarter`)
+    )
+    """
+
+
+    def upsert_statement(self, document: dict):
+        query = f"""
+        REPLACE INTO {self.table} (
+            `symbol`, `year`, `quarter`,
+            `assets`, `equity`, `liability`, `profit`,
+            `total_stocks`
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
+        """
+        with self._db.cursor() as cursor:
+            cursor.execute(query, (
+                document['symbol'],
+                document['year'],
+                document['quarter'],
+                document['assets'],
+                document['equity'],
+                document['liability'],
+                document['profit'],
+                document['total_stocks'],
+            ))
 
 
 class Log(BaseModel):
@@ -92,8 +130,9 @@ class Log(BaseModel):
     )
     """
 
-    def log_collect(
+    def log_action(
             self,
+            action: str,
             symbol: str,
             start_date: Optional[str] = None,
             end_date: Optional[str] = None):
@@ -105,22 +144,21 @@ class Log(BaseModel):
         """
         payload = self.collect_payload(symbol, start_date, end_date)
         with self._db.cursor() as cursor:
-            cursor.execute(query, ('collect', payload))
+            cursor.execute(query, (action, payload))
 
-    def already_collect(
+    def already_exists(
             self,
+            action: str,
             symbol: str,
             start_date: Optional[str] = None,
             end_date: Optional[str] = None):
         payload = self.collect_payload(symbol, start_date, end_date)
         query = f"""
         SELECT * FROM {self.table}
-        WHERE
-            `action` = "collect"
-            and `payload` = %s
+        WHERE `action` = %s and `payload` = %s
         """
         with self._db.cursor() as cursor:
-            cursor.execute(query, (payload,))
+            cursor.execute(query, (action, payload))
             result = cursor.fetchone()
         return bool(result)
 

@@ -5,55 +5,74 @@ from OpenDartReader.dart import OpenDartReader
 from pandas import DataFrame
 from pprint import pprint
 
+# 1분기보고서 : 11013
+# 반기보고서 : 11012
+# 3분기보고서 : 11014
+# 사업보고서 : 11011 (4분기)
+q2code = {
+    'Q1': '11013', 'Q2': '11012',
+    'Q3': '11014', 'Q4': '11011'}
+
 
 class Dart(OpenDartReader):
 
-    def func(self, symbol: str):
+    def get_report(self, symbol: str, year: str, quarter: str):
         """
-        1분기보고서 : 11013
-        반기보고서 : 11012
-        3분기보고서 : 11014
-        사업보고서 : 11011 (4분기)
         # "CFS":연결재무제표, "OFS":재무제표
-        :param symbol:
-        :return:
+        :param symbol: 005930
+        :param year: 2022
+        :param quarter: Q1,2,3,4
+        :return: report(dict)
         """
-        fs_2019 = dart.finstate_all(
+        finstates = self.finstate_all(
             corp=symbol,
-            bsns_year='2019',
+            bsns_year=year,
             fs_div='CFS',
-            reprt_code=11011)
-        fs_2020_1Q = dart.finstate_all(
+            reprt_code=q2code[quarter])
+        small = self.report(
             corp=symbol,
-            bsns_year='2020',
-            fs_div='CFS',
-            reprt_code=11013)
+            key_word='소액주주',
+            bsns_year=year)
 
-        pprint(fs_2019.to_dict(orient='index')[0])
-        pprint(fs_2020_1Q.to_dict(orient='index')[0])
+        if finstates is not None:
+            equity, liability = self._get_자산총계(finstates)
+            assets = equity + liability
+            profit = self._get_당기순이익(finstates)
+        else:
+            equity, liability = None, None
+            assets = None
+            profit = None
 
-        equity, liability = self._get_자산총계(fs_2020_1Q)
-        assets = equity + liability
-        print('자산총계:', f'{assets:,}')
+        if small:
+            total_stocks = int(
+                small['stock_tot_co'].str.replace(',', ''))
+        else:
+            total_stocks = None
 
-        profit = self._get_당기순이익(fs_2020_1Q)
-        print('당기순이익:',f'{profit:,}')
-
-        # 주식 총 발행수
-        small = dart.report(symbol, '소액주주', 2020, reprt_code=11014)
-        pprint(small)
-        stock_tot_co = int(small['stock_tot_co'].str.replace(',', ''))
-        print('주식 총 발행수:',f'{stock_tot_co:,}')
-
-        EPS = profit / stock_tot_co
-        PER = 0 / EPS
-        BPS = equity / stock_tot_co
-        PBR = 0 / BPS
-        ROE = PBR / PER
-        ROA = profit / assets
+        report = {
+            'symbol': symbol,
+            'year': year,
+            'quarter': quarter,
+            'assets':assets, # 자산 총계
+            'equity': equity, # 자본 총계
+            'liability': liability, # 부채 총계
+            'profit': profit, # 당기 순이익
+            'total_stocks': total_stocks, # 총 발행 주식수
+        }
+        return report
+        # TODO 가치지표 따로 측정하기
+        # EPS = profit / stock_tot_co
+        # PER = 0 / EPS
+        # BPS = equity / stock_tot_co
+        # PBR = 0 / BPS
+        # ROE = PBR / PER
+        # ROA = profit / assets
 
     def _get_자산총계(self, finstate):
-        """자본과 부채는 재무상태표에서 당기금액('thstrm_amount') 값을 가져오면 됨"""
+        """
+        BS : 재무상태표
+        자본과 부채는 재무상태표에서 당기금액('thstrm_amount') 값을 가져오면 됨
+        """
         equity = ( # 당기자본(자본총계)
             int(
                 finstate.loc[
@@ -76,16 +95,15 @@ class Dart(OpenDartReader):
         return equity, liability
 
     def _get_당기순이익(self, finstate):
-        # 2019 4분기 ~ 2020 3분기까지의 당기순이익의 합을 구하려면 2019년 4분기 당기순이익과 2020년 1분기 ~ 3분기 당기순이익의 합을 알아여함
-        # 2020년 1분기 ~ 3분기 당기순이익의 합은 2020년 3분기 손익계산서에서 'thstrm_add_amount' 값을 가져오면 되고
-        # 2019년 4분기 당기순이익은 2019년 전체 당기순이익에서 2019년 1분기 ~ 3분기 당기순이익의 합을 빼서 구할 수 있음
-
+        """
+         IS : 손익계산서
+        """
         profit = int(
             finstate.loc[
                 finstate['sj_div'].isin(['IS'])
                 & finstate['account_id'].isin(
                     ['ifrs-full_ProfitLossAttributableToOwnersOfParent']),
-                'thstrm_add_amount' # 당기 누적 순이익
+                'thstrm_amount' # 당기 순이익
             ].replace(",", ""))
         return profit
 
@@ -93,6 +111,9 @@ class Dart(OpenDartReader):
 if __name__ == '__main__':
     api_key = 'dff1bc458b903eeac7b7ea1184b7c341414f0ae3'
     samsung = '005930'
+    year = '2022'
+    quarter = 'Q1'
 
     dart = Dart(api_key=api_key)
-    dart.func(samsung)
+    res = dart.get_report(samsung, year, quarter)
+    pprint(res)
