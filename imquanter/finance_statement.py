@@ -32,7 +32,6 @@ class Dart(OpenDartReader):
         pprint(fs_2019.to_dict(orient='index')[0])
         pprint(fs_2020_1Q.to_dict(orient='index')[0])
 
-        # 자본과 부채는 재무상태표에서 당기금액('thstrm_amount') 값을 가져오면 됨
         equity, liability = self._get_자산총계(fs_2020_1Q)
         assets = equity + liability
         print('자산총계:', f'{assets:,}')

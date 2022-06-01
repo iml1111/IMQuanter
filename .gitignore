@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 sample.py
+*.pkl
 # C extensions
 *.so
 .idea/

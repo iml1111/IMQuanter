@@ -1,95 +1,130 @@
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from typing import List, Union, Optional
-from tinydb import TinyDB, Query
 from datetime import datetime
+from MySQLdb.connections import Connection
+from imquanter.util import get_quarter
 
 
 class BaseModel(metaclass=ABCMeta):
-    """
-    Model Interface
-    # https://tinydb.readthedocs.io/en/latest/api.html#tinydb-table
-    """
+    """Model Interface"""
+    TABLE_QUERY = None
 
-    def __init__(self, db: TinyDB):
+    def __init__(self, db: Connection):
         self._db = db
-        self._table = db.table(self.__class__.__name__)
+        self.table = self.__class__.__name__
+        if self.TABLE_QUERY is None:
+            raise NotImplementedError('TABLE QUERY가 입력되야 함.')
+        self._create_table()
 
-    def insert_one(self, document: dict):
-        self._table.insert(
-            document=self._schemize(document))
+    def select_all(self):
+        query = f'SELECT * FROM {self.table}'
+        with self.mysql.cursor() as cursor:
+            cursor.execute(query)
+            results = cursor.fetchall()
+        return results
 
-    def upsert_one(self, document: dict, condition):
-        self._table.upsert(
-            document=self._schemize(document),
-            cond=condition)
-
-    def insert_many(self, documents: list):
-        documents = [self._schemize(i) for i in documents]
-        self._table.insert_multiple(documents=documents)
-
-    def _schemize(self, document: dict):
-        return {
-            'updated_at': datetime.now().strftime('%Y-%m-%d'),
-            **document,
-        }
+    def _create_table(self):
+        with self._db.cursor() as cursor:
+            cursor.execute(self.TABLE_QUERY % (self.table))
 
 
 class Price(BaseModel):
 
+    TABLE_QUERY = """
+    CREATE TABLE IF NOT EXISTS %s (
+        `symbol` VARCHAR(100) NOT NULL,
+        `date` VARCHAR(100) NOT NULL,
+        `open` BIGINT NOT NULL,
+        `close` BIGINT NOT NULL,
+        `high` BIGINT NOT NULL,
+        `low` BIGINT NOT NULL,
+        `quarter` VARCHAR (10) NOT NULL,
+        PRIMARY KEY (`symbol`, `date`)
+    )
+    """
+
     def upsert_price(self, document: dict):
-        Q = Query()
-        self.upsert_one(
-            document=document,
-            condition=(
-                (Q.symbol == document['symbol'])
-                & (Q.date == document['date'])
-            )
+        query = f"""
+        REPLACE INTO {self.table} (
+            `symbol`, `date`, `quarter`,
+            `open`, `close`, `high`, `low`
         )
+        VALUES (%s, %s, %s, %s, %s, %s, %s) 
+        """
+        with self._db.cursor() as cursor:
+            cursor.execute(query,(
+                document['symbol'],
+                document['date'],
+                get_quarter(document['date']),
+                document['Open'],
+                document['Close'],
+                document['High'],
+                document['Low'],
+            ))
 
     def search_price(
             self,
             symbols: List[str],
             start_date: Optional[str] = None,
             end_date: Optional[str] = None):
-        Q = Query()
-        results = self._table.search(
-            Q.symbol.one_of(symbols)
-            & (Q.date >= start_date if start_date else Q.noop())
-            & (Q.date <= end_date if end_date else Q.noop())
-        )
-        for i in results:
-            del i['updated_at']
-        return results
-
+        query = f"""
+        SELECT * FROM {self.table}
+        WHERE 
+            `symbol` IN ({", ".join(["%s"] * len(symbols))})
+            and %s <= `date` 
+            and `date` <= %s 
+        """
+        with self._db.cursor() as cursor:
+            cursor.execute(query, (*symbols, start_date, end_date))
+            result = cursor.fetchall()
+        return result
 
 class Statement(BaseModel):
-    pass
+    TABLE_QUERY = "TODO"
 
 
 class Log(BaseModel):
+    TABLE_QUERY = """
+    CREATE TABLE IF NOT EXISTS %s (
+        `action` VARCHAR(20) NOT NULL,
+        `payload` VARCHAR(100) NOT NULL,
+        PRIMARY KEY (`action`, `payload`)
+    )
+    """
 
     def log_collect(
             self,
             symbol: str,
             start_date: Optional[str] = None,
             end_date: Optional[str] = None):
-        self.insert_one({
-            'action': 'collect',
-            'symbol': symbol,
-            'start_date': start_date,
-            'end_date': end_date
-        })
+        query = f"""
+        REPLACE INTO {self.table} (
+            action, payload
+        )
+        VALUES (%s, %s)
+        """
+        payload = self.collect_payload(symbol, start_date, end_date)
+        with self._db.cursor() as cursor:
+            cursor.execute(query, ('collect', payload))
 
     def already_collect(
             self,
             symbol: str,
             start_date: Optional[str] = None,
             end_date: Optional[str] = None):
-        Q = Query()
-        result = self._table.search(
-            (Q.action == 'collect')
-            & (Q.symbol == symbol)
-            & (Q.start_date == start_date)
-            & (Q.end_date == end_date))
+        payload = self.collect_payload(symbol, start_date, end_date)
+        query = f"""
+        SELECT * FROM {self.table}
+        WHERE
+            `action` = "collect"
+            and `payload` = %s
+        """
+        with self._db.cursor() as cursor:
+            cursor.execute(query, (payload,))
+            result = cursor.fetchone()
         return bool(result)
+
+    @staticmethod
+    def collect_payload(symbol: str, start_date: str, end_date: str):
+        return f"{symbol}_{start_date}_{end_date}"
 

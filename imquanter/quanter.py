@@ -3,20 +3,31 @@ Quanter Main Module
 """
 from typing import List, Union, Optional
 from pandas import DataFrame
-from tinydb import TinyDB
+from tqdm import tqdm
+import MySQLdb as mysql
 import FinanceDataReader as fdr
 from imquanter.model import Price, Statement, Log
 from imquanter.util import get_all_kospi, log
+from imquanter.uri import URI
 
 
 class Quanter:
 
-    def __init__(self, path='./db.json'):
-        self.path = path
-        self.db = TinyDB(path)
+    def __init__(self, db_uri: str):
+        self.uri = URI(uri=db_uri)
+        self.db = mysql.connect(
+            host=self.uri.hostname,
+            port=self.uri.port,
+            user=self.uri.username,
+            passwd=self.uri.password,
+            db=self.uri.dbname,
+            charset='utf8',
+            cursorclass=mysql.cursors.DictCursor,
+            autocommit=True
+        )
         # models
         self.price = Price(db=self.db)
-        self.statement = Statement(db=self.db)
+        #self.statement = Statement(db=self.db)
         self.log = Log(db=self.db)
 
     def collect(
@@ -51,14 +62,13 @@ class Quanter:
             start_date: Optional[str] = None,
             end_date: Optional[str] = None):
         symbols = [symbols] if isinstance(symbols, str) else symbols
-        for symbol in symbols:
+        for symbol in tqdm(symbols):
             # 이미 수집한 적이 있을 경우, 스킵...
             if self.log.already_collect(symbol, start_date, end_date):
                 log(
                     f"[{symbol}]({start_date or ''}~{end_date or ''})"
-                    " 이미 수집되어 작업을 스킵합니다...")
+                    " 이미 수집되어 작업을 스킵...")
                 continue
-
             df: DataFrame = fdr.DataReader(
                                     symbol=symbol,
                                     start=start_date,
@@ -70,7 +80,7 @@ class Quanter:
                     'date': date.strftime('%Y-%m-%d'),
                     **record,
                 })
-                self.log.log_collect(symbol, start_date, end_date)
+            self.log.log_collect(symbol, start_date, end_date)
 
     def _collect_statement(
             self,
@@ -89,8 +99,8 @@ class Quanter:
     def get_price(
             self,
             symbols: Union[str, List[str]],
-            start_date: Optional[str] = None,
-            end_date: Optional[str] = None):
+            start_date: str = '0000-01-01',
+            end_date: str = '9999-12-31'):
         """
         # DB에 저장된 종목 가격 정보 조회
         :param symbols: 종목 코드 리스트

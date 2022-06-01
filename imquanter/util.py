@@ -1,3 +1,4 @@
+from datetime import datetime
 import FinanceDataReader as fdr
 
 
@@ -29,5 +30,11 @@ def log(*args):
     print('[IMQuanter]', *args)
 
 
+def get_quarter(date_str: str):
+    date = datetime.strptime(date_str, '%Y-%m-%d')
+    div, _ = divmod(date.month - 1, 3)
+    return f"Q{div + 1}"
+
+
 if __name__ == '__main__':
-    print(get_all_kospi())
+    print(get_quarter('2020-07-01'))
