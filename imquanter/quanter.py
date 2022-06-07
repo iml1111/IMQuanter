@@ -45,6 +45,7 @@ class Quanter:
         :param end_date: 수집 마지막 날짜
         :param targets: 수집할 데이터 타입 (price, financial_statement)
         :param symbols: 수집할 종목코드 리스트
+        :param dry: 테스트 실행 여부 (종목을 극소수로만 호출)
         :return: None
         """
         # Default arguments
@@ -65,6 +66,7 @@ class Quanter:
             start_date: str,
             end_date: Optional[str] = None):
         symbols = [symbols] if isinstance(symbols, str) else symbols
+        end_date = end_date if end_date else now_date()
         log('# 주가 정보 수집 개시...')
         for symbol in tqdm(symbols):
             if self.log.already_exists(
