@@ -18,6 +18,7 @@ class Dart(OpenDartReader):
 
     def get_report(self, symbol: str, year: str, quarter: str):
         """
+        TODO 좀 더 다양한 재무제표 데이터 수집할 거리 생각해보기
         # "CFS":연결재무제표, "OFS":재무제표
         :param symbol: 005930
         :param year: 2022
@@ -61,9 +62,9 @@ class Dart(OpenDartReader):
         }
         return report
         # TODO 가치지표 따로 측정하기
-        # EPS = profit / stock_tot_co
+        # EPS = profit / total_stocks
         # PER = 0 / EPS
-        # BPS = equity / stock_tot_co
+        # BPS = equity / total_stocks
         # PBR = 0 / BPS
         # ROE = PBR / PER
         # ROA = profit / assets
