@@ -1,3 +1,6 @@
+"""
+수정 주가 수집 테이블
+"""
 from .base import BaseModel
 from typing import List, Optional
 from imquanter.util import get_quarter

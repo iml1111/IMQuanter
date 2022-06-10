@@ -1,5 +1,7 @@
+"""
+가치 지표 수집 테이블
+"""
 from .base import BaseModel
-
 
 
 class Factor(BaseModel):

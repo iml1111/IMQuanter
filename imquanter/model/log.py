@@ -1,3 +1,6 @@
+"""
+실행 기록 테이블
+"""
 from typing import Optional
 from .base import BaseModel
 
