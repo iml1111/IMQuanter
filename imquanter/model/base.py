@@ -4,7 +4,6 @@ from MySQLdb.connections import Connection
 
 class BaseModel(metaclass=ABCMeta):
     """Model Interface"""
-    # TODO 디렉터리 구조화시키기
     TABLE_QUERY = None
 
     def __init__(self, db: Connection):
