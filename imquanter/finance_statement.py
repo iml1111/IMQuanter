@@ -61,13 +61,6 @@ class Dart(OpenDartReader):
             'total_stocks': total_stocks, # 총 발행 주식수
         }
         return report
-        # TODO 가치지표 따로 측정하기
-        # EPS = profit / total_stocks
-        # PER = 0 / EPS
-        # BPS = equity / total_stocks
-        # PBR = 0 / BPS
-        # ROE = PBR / PER
-        # ROA = profit / assets
 
     def _get_자산총계(self, finstate):
         """
