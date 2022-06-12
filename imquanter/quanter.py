@@ -44,7 +44,7 @@ class Quanter:
             end_date: Optional[str] = None,
             targets: Optional[List[str]] = None,
             symbols: Optional[List[str]] = None,
-            dry: bool = True):
+            dry: bool = False):
         """
         # 해당 종목들에 대하여, 수집할 데이터를 추출하여 DB에 저장
         :param start_date: 수집 시작 날짜

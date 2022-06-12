@@ -2,7 +2,7 @@ from datetime import datetime
 import FinanceDataReader as fdr
 
 
-def get_all_kospi(dry=True):
+def get_all_kospi(dry=False):
     """
     # KOSPI 주식 종목 코드 리스트 반환
     :param dry: 테스트 실행 여부
@@ -23,6 +23,7 @@ def get_all_kospi(dry=True):
     results = []
     for record in stocks.values():
         results.append(record['Symbol'])
+    results = list(filter(lambda x: 'H' not in x, res))
     return results
 
 
@@ -62,4 +63,4 @@ def type_valid(data, type):
 
 
 if __name__ == '__main__':
-    print(get_quarter_sequence('2020-03-01', '2020-12-01'))
+    pass
