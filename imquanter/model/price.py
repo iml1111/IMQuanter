@@ -58,3 +58,29 @@ class Price(BaseModel):
             cursor.execute(query, (*symbols, start_date, end_date))
             result = cursor.fetchall()
         return result
+
+    def get_first_quarter_price(
+            self,
+            symbols: List[str],
+            start_date: Optional[str] = None,
+            end_date: Optional[str] = None):
+        query = f"""
+        SELECT a.symbol, a.year, a.quarter, b.close 
+        FROM (
+            SELECT 
+            symbol, year, quarter, 
+            MIN(date) as min_date
+            FROM {self.table}
+            WHERE
+                `symbol` IN ({", ".join(["%s"] * len(symbols))})
+                and %s <= date 
+                and date <= %s	
+            GROUP BY symbol, year, quarter 
+        ) a
+        LEFT JOIN {self.table} b
+        ON a.symbol=b.symbol AND a.min_date=b.date
+        """
+        with self._db.cursor() as cursor:
+            cursor.execute(query, (*symbols, start_date, end_date))
+            result = cursor.fetchall()
+        return result

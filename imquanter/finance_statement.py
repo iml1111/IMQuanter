@@ -39,40 +39,51 @@ class Dart(OpenDartReader):
             equity, liability = self._get_자산총계(finstates)
             assets = equity + liability
             profit = self._get_당기순이익(finstates)
+            revenue = self._get_매출액(finstates)
+            sales_flow = self._get_영업활동_현금흐름(finstates)
         else:
             equity, liability = None, None
             assets = None
             profit = None
+            revenue = None
+            sales_flow = None
 
-        if small:
+        if small is not None:
             total_stocks = int(
                 small['stock_tot_co'].str.replace(',', ''))
         else:
             total_stocks = None
 
         report = {
-            'symbol': symbol,
-            'year': year,
-            'quarter': quarter,
+            'symbol': symbol, # 종목 코드
+            'year': year, # 연도
+            'quarter': quarter, # 분기
             'assets':assets, # 자산 총계
             'equity': equity, # 자본 총계
             'liability': liability, # 부채 총계
+            'revenue': revenue, # 매출액
+            'sales_flow': sales_flow, # 영업활동 현금흐름
             'profit': profit, # 당기 순이익
             'total_stocks': total_stocks, # 총 발행 주식수
         }
         return report
 
+    def get_finstate_all(self, symbol: str, year: str, quarter: str):
+        """재무제표 분석용 메소드"""
+        finstates = self.finstate_all(
+            corp=symbol,
+            bsns_year=year,
+            fs_div='CFS',
+            reprt_code=q2code[quarter])
+        return finstates.to_dict(orient='index')
+
     def _get_자산총계(self, finstate):
-        """
-        BS : 재무상태표
-        자본과 부채는 재무상태표에서 당기금액('thstrm_amount') 값을 가져오면 됨
-        """
         equity = ( # 당기자본(자본총계)
             int(
                 finstate.loc[
-                    finstate['sj_div'].isin(['BS'])
+                    finstate['sj_div'].isin(['BS']) # BS : 재무상태표
                     & finstate['account_id'].isin(['ifrs-full_Equity']),
-                    'thstrm_amount'
+                    'thstrm_amount' # 당기 금액을 뜻 함
                 ].replace(",", "")
             )
         )
@@ -88,26 +99,43 @@ class Dart(OpenDartReader):
         )
         return equity, liability
 
+    def _get_매출액(self, finstate):
+        revenue = int( # 당기 매출액
+                finstate.loc[
+                    finstate['sj_div'].isin(['IS'])
+                    & finstate['account_id'].isin(
+                        ['ifrs-full_Revenue']),
+                    'thstrm_amount'
+                ].replace(",", ""))
+        return revenue
+
     def _get_당기순이익(self, finstate):
-        """
-         IS : 손익계산서
-        """
         profit = int(
             finstate.loc[
-                finstate['sj_div'].isin(['IS'])
+                finstate['sj_div'].isin(['IS']) # IS : 손익계산서
                 & finstate['account_id'].isin(
                     ['ifrs-full_ProfitLossAttributableToOwnersOfParent']),
-                'thstrm_amount' # 당기 순이익
+                'thstrm_amount'
             ].replace(",", ""))
         return profit
+
+    def _get_영업활동_현금흐름(self, finstate):
+        sales_flow = int(
+            finstate.loc[
+                finstate['sj_div'].isin(['CF'])
+                & finstate['account_id'].isin(
+                    ['ifrs-full_CashFlowsFromUsedInOperatingActivities']),
+                'thstrm_amount'
+            ].replace(",", ""))
+        return sales_flow
 
 
 if __name__ == '__main__':
     api_key = 'dff1bc458b903eeac7b7ea1184b7c341414f0ae3'
     samsung = '005930'
-    year = '2022'
-    quarter = 'Q1'
+    year = '2021'
+    quarter = 'Q2'
 
     dart = Dart(api_key=api_key)
-    res = dart.get_report(samsung, year, quarter)
+    res = dart.get_finstate_all(samsung, year, quarter)
     pprint(res)

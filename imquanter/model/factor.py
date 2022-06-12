@@ -11,12 +11,54 @@ class Factor(BaseModel):
         `symbol` VARCHAR(20) NOT NULL,
         `year` VARCHAR(10) NOT NULL,
         `quarter` VARCHAR (10) NOT NULL,
-        `eps` DOUBLE NOT NULL,
-        `per` DOUBLE NOT NULL,
-        `bps` DOUBLE NOT NULL,
-        `pbr` DOUBLE NOT NULL,
-        `roe` DOUBLE NOT NULL,
-        `roa` DOUBLE NOT NULL,
+        `eps` DOUBLE,
+        `per` DOUBLE,
+        `bps` DOUBLE,
+        `pbr` DOUBLE,
+        `roe` DOUBLE,
+        `roa` DOUBLE,
+        `sps` DOUBLE,
+        `psr` DOUBLE,
+        `cps` DOUBLE,
+        `pcr` DOUBLE,
         PRIMARY KEY (`symbol`, `year`, `quarter`)
     )
     """
+
+    def upsert_factor(self, document: dict):
+        query = f"""
+        REPLACE INTO {self.table} (
+            `symbol`, `year`, `quarter`,
+            `eps`,
+            `per`,
+            `bps`,
+            `pbr`,
+            `roe`,
+            `roa`,
+            `sps`,
+            `psr`,
+            `cps`,
+            `pcr`
+        )
+        VALUES (
+            %s, %s, %s, %s, %s, 
+            %s, %s, %s, %s, %s,
+            %s, %s, %s
+        ) 
+        """
+        with self._db.cursor() as cursor:
+            cursor.execute(query,(
+                document['symbol'],
+                document['year'],
+                document['quarter'],
+                document['eps'],
+                document['per'],
+                document['bps'],
+                document['pbr'],
+                document['roe'],
+                document['roa'],
+                document['sps'],
+                document['psr'],
+                document['cps'],
+                document['pcr']
+            ))

@@ -7,7 +7,8 @@ from tqdm import tqdm
 import MySQLdb as mysql
 import FinanceDataReader as fdr
 from imquanter.finance_statement import Dart
-from imquanter.model import Price, Statement, Log
+from imquanter.factor_collector import FactorCollector
+from imquanter.model import Price, Statement, Log, Factor
 from imquanter.util import get_all_kospi, log, get_quarter, get_quarter_sequence, now_date
 from imquanter.uri import URI
 
@@ -30,7 +31,7 @@ class Quanter:
         self.price = Price(db=self.db)
         self.statement = Statement(db=self.db)
         self.log = Log(db=self.db)
-
+        self.factor = Factor(db=self.db)
 
     def collect(
             self,
@@ -58,7 +59,32 @@ class Quanter:
             self._collect_price(symbols, start_date, end_date)
         if 'financial_statement' in targets:
             self._collect_statement(symbols, start_date, end_date)
+            self._collect_factor(symbols, start_date, end_date)
         log('# 수집 완료!')
+
+    def get(self, query):
+        pass
+
+    def get_price(
+            self,
+            symbols: Union[str, List[str]],
+            start_date: str = '0000-01-01',
+            end_date: str = '9999-12-31'):
+        """
+        # DB에 저장된 종목 가격 정보 조회
+        :param symbols: 종목 코드 리스트
+        :param start_date: 시작 날짜 (Ex. 2000-01-01)
+        :param end_date: 마감 날짜 (Ex. 2022-01-01)
+        :return: DataFrame(
+            symbol, date, Open, High, Low, Close, Volume, Change)
+        """
+        symbols = [symbols] if isinstance(symbols, str) else symbols
+        result = self.price.search_price(
+                                symbols=symbols,
+                                start_date=start_date,
+                                end_date=end_date)
+        return DataFrame(result)
+
 
     def _collect_price(
             self,
@@ -118,29 +144,61 @@ class Quanter:
                                     symbol=symbol,
                                     year=year,
                                     quarter=quarter)
+                if None in [*report.values()]:
+                    log(
+                        "정상적으로 재무제표가 수집되지 않았으므로 스킵함.->"
+                        f"({symbol},{year},{quarter})")
+                    continue
                 self.statement.upsert_statement(report)
             self.log.log_action(
                 'collect_statement', symbol, start_date, end_date)
 
-    def get_price(
+    def _collect_factor(
             self,
             symbols: Union[str, List[str]],
-            start_date: str = '0000-01-01',
-            end_date: str = '9999-12-31'):
+            start_date: str,
+            end_date: Optional[str] = None):
         """
-        # DB에 저장된 종목 가격 정보 조회
-        :param symbols: 종목 코드 리스트
-        :param start_date: 시작 날짜 (Ex. 2000-01-01)
-        :param end_date: 마감 날짜 (Ex. 2022-01-01)
-        :return: DataFrame(
-            symbol, date, Open, High, Low, Close, Volume, Change)
+        수집된 주가 및 재무제표 데이터를 기반으로 가치 지표 수집 및 DB에 저장
         """
         symbols = [symbols] if isinstance(symbols, str) else symbols
-        result = self.price.search_price(
-                                symbols=symbols,
-                                start_date=start_date,
-                                end_date=end_date)
-        return DataFrame(result)
+        end_date = end_date if end_date else now_date()
+        sequence = get_quarter_sequence(start_date, end_date)
+
+        # 팩터에 수집 최적화를 위한 데이터 Eager loading
+        price_dict = {
+            (i['symbol'], i['year'], i['quarter']): i['close']
+            for i in self.price.get_first_quarter_price(
+                            symbols, start_date, end_date)
+        }
+        statement_dict = {
+            (i['symbol'], i['year'], i['quarter']): i
+            for i in self.statement.search_statement(
+                        symbols, sequence[0][0], sequence[-1][0])
+        }
+
+        log('# 가치지표 팩터 수집 개시...')
+        for symbol in tqdm(symbols):
+            if self.log.already_exists(
+                    'collect_factor',
+                    symbol, start_date, end_date):
+                log(f"[{symbol}]({start_date or ''}~{end_date or ''})"
+                    " 팩터 수집정보가 이미 존재하여 스킵...")
+                continue
+            for year, quarter in sequence:
+                target = (symbol, year, quarter)
+                # 주가 또는 재무제표가 수집되지 않은 종목에 대한 팩터 수집 스킵 처리
+                if (target not in price_dict
+                        or target not in statement_dict):
+                    continue
+                price = price_dict[target]
+                statement = statement_dict[target]
+                report = FactorCollector.collect_factor(price, statement)
+                self.factor.upsert_factor(report)
+            self.log.log_action(
+                'collect_factor', symbol, start_date, end_date)
+
+
 
 
 
