@@ -32,6 +32,7 @@ class Quanter:
             cursorclass=mysql.cursors.DictCursor,
             autocommit=True)
         self.dart = Dart(api_key=dart_api_key)
+        self.factor_collector = FactorCollector()
         # models
         self.price = Price(db=self.db)
         self.statement = Statement(db=self.db)
@@ -232,7 +233,7 @@ class Quanter:
                     continue
                 price = price_dict[target]
                 statement = statement_dict[target]
-                report = FactorCollector.collect_factor(price, statement)
+                report = self.factor_collector.collect_factor(price, statement)
                 self.factor.upsert_factor(report)
             self.log.log_action(
                 'collect_factor', symbol, start_date, end_date)

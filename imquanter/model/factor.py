@@ -21,6 +21,7 @@ class Factor(BaseModel):
         `psr` DOUBLE,
         `cps` DOUBLE,
         `pcr` DOUBLE,
+        `combo_4` DOUBLE,
         PRIMARY KEY (`symbol`, `year`, `quarter`)
     )
     """
@@ -38,12 +39,13 @@ class Factor(BaseModel):
             `sps`,
             `psr`,
             `cps`,
-            `pcr`
+            `pcr`,
+            `combo_4`
         )
         VALUES (
             %s, %s, %s, %s, %s, 
             %s, %s, %s, %s, %s,
-            %s, %s, %s
+            %s, %s, %s, %s
         ) 
         """
         with self._db.cursor() as cursor:
@@ -60,5 +62,6 @@ class Factor(BaseModel):
                 document['sps'],
                 document['psr'],
                 document['cps'],
-                document['pcr']
+                document['pcr'],
+                document['combo_4'],
             ))

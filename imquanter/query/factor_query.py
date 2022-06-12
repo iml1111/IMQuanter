@@ -60,3 +60,7 @@ class CPS(Metric):
 
 class PCR(Metric):
     METRIC = 'pcr'
+
+
+class Combo4(Metric):
+    METRIC = 'combo_4'
