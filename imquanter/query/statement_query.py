@@ -15,9 +15,9 @@ class Metric(Statement):
     @property
     def query(self):
         strings = []
-        if self.gte:
+        if self.gte is not None:
             strings.append(f"{self.gte} <= {self.METRIC}")
-        if self.lte:
+        if self.lte is not None:
             strings.append(f"{self.METRIC} <= {self.lte}")
         return " AND ".join(strings)
 

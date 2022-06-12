@@ -8,11 +8,14 @@ class StrMetric(Generic):
     def __init__(
             self,
             gte: str = None,
-            lte: str = None):
-        type_valid(gte, str)
-        type_valid(lte, str)
-        self.gte = gte
-        self.lte = lte
+            lte: str = None,
+            eq: str = None):
+        self.gte = str(gte)
+        self.lte = str(lte)
+        if eq:
+            self.gte = self.lte = str(eq)
+        if gte and not lte and not eq:
+            self.lte = self.gte
 
     @property
     def query(self):
