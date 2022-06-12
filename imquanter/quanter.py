@@ -3,6 +3,7 @@ Quanter Main Module
 """
 from typing import List, Union, Optional
 from pandas import DataFrame
+from pprint import pprint
 from tqdm import tqdm
 import MySQLdb as mysql
 import FinanceDataReader as fdr
@@ -62,8 +63,42 @@ class Quanter:
             self._collect_factor(symbols, start_date, end_date)
         log('# 수집 완료!')
 
-    def get(self, query):
-        pass
+    def get(
+            self,
+            filter=None,
+            sort=None,
+            verbose=False):
+        query = f"""
+        SELECT * FROM Statement s
+        LEFT JOIN Factor f 
+        ON 
+            s.symbol = f.symbol 
+            and s.`year` = f.`year` 
+            and s.quarter = f.quarter
+        """
+        if filter:
+            query += f"""
+        WHERE {str(filter)}"""
+        if sort:
+            query += f"""
+        ORDER BY {" ".join(
+            [f'{i[0].lower()} {i[1].upper()}'
+             for i in sort])}"""
+
+        with self.db.cursor() as cursor:
+            cursor.execute(query)
+            result = cursor.fetchall()
+        if verbose:
+            log("Executed Query >")
+            pprint(query)
+            return result
+        # If Not Verbose,
+        symbol_set, symbol_result = set(), []
+        for i in result:
+            if i['symbol'] not in symbol_set:
+                symbol_set.add(i['symbol'])
+                symbol_result.append(i['symbol'])
+        return symbol_result
 
     def get_price(
             self,

@@ -56,5 +56,10 @@ def now_date():
     return datetime.now().strftime('%Y-%m-%d')
 
 
+def type_valid(data, type):
+    if not isinstance(data, type):
+        raise TypeError("Invalid Type.")
+
+
 if __name__ == '__main__':
     print(get_quarter_sequence('2020-03-01', '2020-12-01'))
