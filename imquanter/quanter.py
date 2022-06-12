@@ -41,7 +41,7 @@ class Quanter:
 
     def collect(
             self,
-            start_date: Optional[str],
+            start_date: str,
             end_date: Optional[str] = None,
             targets: Optional[List[str]] = None,
             symbols: Optional[List[str]] = None,
@@ -72,7 +72,14 @@ class Quanter:
             self,
             filter: Optional[Query] = None,
             sort: Optional[List[tuple]] = None,
-            verbose: Optional[bool] = False):
+            verbose: bool = False):
+        """
+        # 수집된 종목 정보들을 바탕으로, 적절한 조건에 따라 종목 추출 수행
+        :param filter: 종목 추출 조건
+        :param sort: 종목 추출시 정렬 조건
+        :param verbose: 출력 범위 여부
+        :return: 종목 코드 리스트 or 세부 종목 정보 리스트
+        """
         query = f"""
         SELECT * FROM Statement s
         LEFT JOIN Factor f 
