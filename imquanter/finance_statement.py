@@ -41,20 +41,17 @@ class Dart(OpenDartReader):
             profit = self._get_당기순이익(finstates)
             revenue = self._get_매출액(finstates)
             sales_flow = self._get_영업활동_현금흐름(finstates)
+            general_data = self.get_general_data(finstates)
         else:
-            equity, liability = None, None
-            assets = None
-            profit = None
-            revenue = None
-            sales_flow = None
+            return {'fail': None}
 
         if small is not None:
             total_stocks = int(
                 small['stock_tot_co'].str.replace(',', ''))
         else:
-            total_stocks = None
+            return {'fail': None}
 
-        report = {
+        return {
             'symbol': symbol, # 종목 코드
             'year': year, # 연도
             'quarter': quarter, # 분기
@@ -65,8 +62,8 @@ class Dart(OpenDartReader):
             'sales_flow': sales_flow, # 영업활동 현금흐름
             'profit': profit, # 당기 순이익
             'total_stocks': total_stocks, # 총 발행 주식수
+            **general_data, # 그 외 나머지 데이터들
         }
-        return report
 
     def get_finstate_all(self, symbol: str, year: str, quarter: str):
         """재무제표 분석용 메소드"""
@@ -75,7 +72,27 @@ class Dart(OpenDartReader):
             bsns_year=year,
             fs_div='CFS',
             reprt_code=q2code[quarter])
-        return finstates.to_dict(orient='index')
+        #return finstates.to_dict(orient='index')
+        return finstates
+
+    def get_general_data(self, finstates):
+        """그외의 재무제표 데이터를 일단 수집"""
+        dicts = finstates.to_dict(orient='index')
+        result = []
+        for value in dicts.values():
+            acc_id = value['account_id']
+            if (isinstance(acc_id, str)
+                    and acc_id.startswith('ifrs-full')
+                    and len(acc_id) < 30):
+                conv_id = self._convert_acc_id(acc_id)
+                amount = value['thstrm_amount']
+                result.append((conv_id, amount))
+        return {i[0]:i[1] for i in result[::-1]}
+
+    def _convert_acc_id(self, acc_id: str):
+        acc_id = acc_id.replace('ifrs-full_', '')
+        acc_id = acc_id.lower()
+        return "g_" + acc_id
 
     def _get_자산총계(self, finstate):
         equity = ( # 당기자본(자본총계)
@@ -138,4 +155,5 @@ if __name__ == '__main__':
 
     dart = Dart(api_key=api_key)
     res = dart.get_finstate_all(samsung, year, quarter)
+    res = dart.get_general_data(res)
     pprint(res)

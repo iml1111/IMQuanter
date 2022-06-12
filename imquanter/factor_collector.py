@@ -1,13 +1,5 @@
 """
 가치 지표 수집기
-# EPS = profit / total_stocks
-# PER = price / EPS
-# BPS = equity / total_stocks
-# PBR = price / BPS
-# ROE = PBR / PER
-# ROA = profit / assets
-# SPS = revenue / total_stocks
-# PSR = price / SPS
 """
 
 

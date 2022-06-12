@@ -10,7 +10,11 @@ import FinanceDataReader as fdr
 from imquanter.finance_statement import Dart
 from imquanter.factor_collector import FactorCollector
 from imquanter.model import Price, Statement, Log, Factor
-from imquanter.util import get_all_kospi, log, get_quarter, get_quarter_sequence, now_date
+from imquanter.util import (
+    get_all_kospi, log, get_quarter,
+    get_quarter_sequence, now_date
+)
+from imquanter.query.base import Query
 from imquanter.uri import URI
 
 
@@ -65,9 +69,9 @@ class Quanter:
 
     def get(
             self,
-            filter=None,
-            sort=None,
-            verbose=False):
+            filter: Optional[Query] = None,
+            sort: Optional[List[tuple]] = None,
+            verbose: Optional[bool] = False):
         query = f"""
         SELECT * FROM Statement s
         LEFT JOIN Factor f 
@@ -91,7 +95,7 @@ class Quanter:
         if verbose:
             log("Executed Query >")
             pprint(query)
-            return result
+            return DataFrame(result)
         # If Not Verbose,
         symbol_set, symbol_result = set(), []
         for i in result:
