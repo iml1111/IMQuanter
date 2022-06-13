@@ -18,12 +18,18 @@ q2code = {
 
 class Dart(OpenDartReader):
 
-    def get_report(self, symbol: str, year: str, quarter: str):
+    def get_report(
+            self,
+            symbol: str,
+            year: str,
+            quarter: str,
+            include_general: bool = False):
         """
         # "CFS":연결재무제표, "OFS":재무제표
         :param symbol: 005930
         :param year: 2022
         :param quarter: Q1,2,3,4
+        :param include_general: 기타 데이터 포함여부
         :return: report(dict)
         """
         finstates = self.finstate_all(
@@ -44,7 +50,10 @@ class Dart(OpenDartReader):
                 profit = self._get_당기순이익(finstates)
                 revenue = self._get_매출액(finstates)
                 sales_flow = self._get_영업활동_현금흐름(finstates)
-                general_data = self.get_general_data(finstates)
+                if include_general:
+                    general_data = self.get_general_data(finstates)
+                else:
+                    general_data = {}
             except TypeError:
                 return {'fail': None}
         else:

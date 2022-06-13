@@ -12,14 +12,36 @@ class FactorCollector:
         statement: 해당 분기의 재무제표
         """
         EPS = statement['profit'] / statement['total_stocks']
-        PER = price / EPS
+        if EPS > 0:
+            PER = price / EPS
+        else:
+            PER = 0
         BPS = statement['equity'] / statement['total_stocks']
-        PBR = price / BPS
+        if BPS > 0:
+            PBR = price / BPS
+        else:
+            PBR = 0
         SPS = statement['revenue'] / statement['total_stocks']
-        PSR = price / SPS
+        if SPS > 0:
+            PSR = price / SPS
+        else:
+            PSR = 0
         CPS = statement['sales_flow'] / statement['total_stocks']
-        PCR = price / CPS
+        if CPS > 0:
+            PCR = price / CPS
+        else:
+            PCR = 0
         combo_4 = self.가치투자_4대장_콤보(PER, PBR, PCR, PSR)
+
+        if PER > 0:
+            ROE = PBR / PER
+        else:
+            ROE = 0
+
+        if statement['assets'] != 0:
+            ROA = statement['profit'] / statement['assets']
+        else:
+            ROA = 0
 
         return {
             'symbol': statement['symbol'],
@@ -29,8 +51,8 @@ class FactorCollector:
             'per': PER,
             'bps': BPS,
             'pbr': PBR,
-            'roe': PBR / PER,
-            'roa': statement['profit'] / statement['assets'],
+            'roe': ROE,
+            'roa': ROA,
             'sps': SPS,
             'psr': PSR,
             'cps': CPS,
