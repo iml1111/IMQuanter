@@ -1,6 +1,8 @@
 """
 https://opendart.fss.or.kr/guide/detail.do?apiGrpCd=DS003&apiId=2019016
 """
+import time
+
 from OpenDartReader.dart import OpenDartReader
 from pandas import DataFrame
 from pprint import pprint
@@ -29,6 +31,7 @@ class Dart(OpenDartReader):
             bsns_year=year,
             fs_div='CFS',
             reprt_code=q2code[quarter])
+        time.sleep(1)
         small = self.report(
             corp=symbol,
             key_word='소액주주',

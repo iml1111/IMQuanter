@@ -2,7 +2,7 @@ from datetime import datetime
 import FinanceDataReader as fdr
 
 
-def get_all_kospi(dry=False):
+def get_all_kospi(dry=False, db=None):
     """
     # KOSPI 주식 종목 코드 리스트 반환
     :param dry: 테스트 실행 여부
@@ -18,12 +18,11 @@ def get_all_kospi(dry=False):
             '066570', # 엘지전자
         ]
     # All KOSPI Symbols
-    stocks = fdr.StockListing('KOSPI')
-    stocks: dict = stocks.to_dict(orient='index')
-    results = []
-    for record in stocks.values():
-        results.append(record['Symbol'])
-    results = list(filter(lambda x: 'H' not in x, results))
+    query = "SELECT DISTINCT stock_code FROM imquanter.kospi;"
+    with db.cursor() as cursor:
+        cursor.execute(query)
+        results = cursor.fetchall()
+    results = [i['stock_code'] for i in results]
     return results
 
 

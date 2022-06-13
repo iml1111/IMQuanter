@@ -46,7 +46,7 @@ class Statement(BaseModel):
 
     def upsert_statement(self, document: dict):
         query = f"""
-        REPLACE INTO {self.table} (
+        INSERT INTO {self.table} (
             `symbol`, `year`, `quarter`,
             `assets`, `equity`, `liability`, 
             `revenue`, `sales_flow`, `profit`, 

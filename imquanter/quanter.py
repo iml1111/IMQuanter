@@ -59,7 +59,7 @@ class Quanter:
         # Default arguments
         targets = targets if targets else ('price', 'statement')
         symbols = None if symbols == 'all' else symbols
-        symbols = symbols if symbols else get_all_kospi(dry=dry)
+        symbols = symbols if symbols else get_all_kospi(dry=dry, db=self.db)
 
         # 타겟 종목들의 데이터를 불러와 DB에 upsert
         if 'price' in targets:
@@ -208,10 +208,11 @@ class Quanter:
                                     year=year,
                                     quarter=quarter)
                 if None in [*report.values()]:
+                    log("재무제표가 일부 소실되어 스킵...")
                     continue
                 #documents.append(report)
                 self.statement.upsert_statement(report)
-                time.sleep(1)
+                time.sleep(1.5)
             self.log.log_action(
                 'collect_statement', symbol, start_date, end_date)
 
