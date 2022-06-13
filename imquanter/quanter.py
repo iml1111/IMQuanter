@@ -20,7 +20,7 @@ from imquanter.uri import URI
 
 class Quanter:
 
-    def __init__(self, db_uri: str, dart_api_key: str):
+    def __init__(self, db_uri: str, dart_key: str):
         self.uri = URI(uri=db_uri)
         self.db = mysql.connect(
             host=self.uri.hostname,
@@ -31,7 +31,7 @@ class Quanter:
             charset='utf8',
             cursorclass=mysql.cursors.DictCursor,
             autocommit=True)
-        self.dart = Dart(api_key=dart_api_key)
+        self.dart = Dart(api_key=dart_key)
         self.factor_collector = FactorCollector()
         # models
         self.price = Price(db=self.db)
@@ -131,7 +131,6 @@ class Quanter:
                                 start_date=start_date,
                                 end_date=end_date)
         return DataFrame(result)
-
 
     def _collect_price(
             self,
