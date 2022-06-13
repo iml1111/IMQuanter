@@ -194,7 +194,6 @@ class Quanter:
         sequence = get_quarter_sequence(start_date, end_date)
 
         log('# 재무제표 수집 개시...')
-        #documents = []
 
         for symbol in tqdm(symbols):
             if self.log.already_exists(
@@ -209,16 +208,12 @@ class Quanter:
                                     year=year,
                                     quarter=quarter)
                 if None in [*report.values()]:
-                    log("재무제표가 일부 소실되어 스킵...")
                     continue
-                #documents.append(report)
                 self.statement.upsert_statement(report)
-                time.sleep(1.5)
             self.log.log_action(
                 'collect_statement', symbol, start_date, end_date)
 
         log("# 재무제표 정보 DB 갱신...")
-        #self.statement.insert_statements(documents)
 
     def _collect_factor(
             self,
