@@ -112,7 +112,7 @@ class Statement(BaseModel):
 
     def insert_statements(self, documents: dict):
         query = f"""
-        INSERT INTO {self.table} (
+        REPLACE INTO {self.table} (
             `symbol`, `year`, `quarter`,
             `assets`, `equity`, `liability`, 
             `revenue`, `sales_flow`, `profit`, 

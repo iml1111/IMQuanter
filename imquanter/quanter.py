@@ -50,20 +50,20 @@ class Quanter:
         # 해당 종목들에 대하여, 수집할 데이터를 추출하여 DB에 저장
         :param start_date: 수집 시작 날짜
         :param end_date: 수집 마지막 날짜
-        :param targets: 수집할 데이터 타입 (price, financial_statement)
+        :param targets: 수집할 데이터 타입 (price, statement)
         :param symbols: 수집할 종목코드 리스트
         :param dry: 테스트 실행 여부 (종목을 극소수로만 호출)
         :return: None
         """
         # Default arguments
-        targets = targets if targets else ('price', 'financial_statement')
+        targets = targets if targets else ('price', 'statement')
         symbols = None if symbols == 'all' else symbols
         symbols = symbols if symbols else get_all_kospi(dry=dry)
 
         # 타겟 종목들의 데이터를 불러와 DB에 upsert
         if 'price' in targets:
             self._collect_price(symbols, start_date, end_date)
-        if 'financial_statement' in targets:
+        if 'statement' in targets:
             self._collect_statement(symbols, start_date, end_date)
             self._collect_factor(symbols, start_date, end_date)
         log('# 수집 완료!')
