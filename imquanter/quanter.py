@@ -148,9 +148,7 @@ class Quanter:
         end_date = end_date if end_date else now_date()
         log('# 주가 정보 수집 개시...')
         for symbol in tqdm(symbols):
-            if self.log.already_exists(
-                    'collect_price',
-                    symbol, start_date, end_date):
+            if self.log.already_exists('collect_price',symbol, start_date, end_date):
                 log(f"[{symbol}]({start_date or ''}~{end_date or ''})"
                     " 주가 정보가 이미 존재하여 스킵...")
                 continue
