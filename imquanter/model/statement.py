@@ -110,6 +110,75 @@ class Statement(BaseModel):
                 document['g_shorttermborrowings'],
             ))
 
+    def insert_statements(self, documents: dict):
+        query = f"""
+        INSERT INTO {self.table} (
+            `symbol`, `year`, `quarter`,
+            `assets`, `equity`, `liability`, 
+            `revenue`, `sales_flow`, `profit`, 
+            `total_stocks`,
+            `g_assets`,
+            `g_comprehensiveincome`,
+            `g_costofsales`,
+            `g_currentassets`,
+            `g_currentliabilities`,
+            `g_currentprovisions`,
+            `g_deferredtaxassets`,
+            `g_dividendspaid`,
+            `g_equity`,
+            `g_financeincome`,
+            `g_grossprofit`,
+            `g_inventories`,
+            `g_issuedcapital`,
+            `g_liabilities`,
+            `g_noncurrentassets`,
+            `g_profitloss`,
+            `g_profitlossbeforetax`,
+            `g_retainedearnings`,
+            `g_revenue`,
+            `g_sharepremium`,
+            `g_shorttermborrowings`
+        )
+        VALUES ({", ".join(["%s"] * 31)}) 
+        """
+        rows = []
+        for document in documents:
+            rows.append((
+                document['symbol'],
+                document['year'],
+                document['quarter'],
+                document['assets'],
+                document['equity'],
+                document['liability'],
+                document['revenue'],
+                document['sales_flow'],
+                document['profit'],
+                document['total_stocks'],
+                document['g_assets'],
+                document['g_comprehensiveincome'],
+                document['g_costofsales'],
+                document['g_currentassets'],
+                document['g_currentliabilities'],
+                document['g_currentprovisions'],
+                document['g_deferredtaxassets'],
+                document['g_dividendspaid'],
+                document['g_equity'],
+                document['g_financeincome'],
+                document['g_grossprofit'],
+                document['g_inventories'],
+                document['g_issuedcapital'],
+                document['g_liabilities'],
+                document['g_noncurrentassets'],
+                document['g_profitloss'],
+                document['g_profitlossbeforetax'],
+                document['g_retainedearnings'],
+                document['g_revenue'],
+                document['g_sharepremium'],
+                document['g_shorttermborrowings'],
+            ))
+        with self._db.cursor() as cursor:
+            cursor.executemany(query, rows)
+
     def search_statement(
             self,
             symbols: List[str],

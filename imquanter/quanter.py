@@ -146,25 +146,34 @@ class Quanter:
             end_date: Optional[str] = None):
         symbols = [symbols] if isinstance(symbols, str) else symbols
         end_date = end_date if end_date else now_date()
+
         log('# 주가 정보 수집 개시...')
+        documents = []
+
         for symbol in tqdm(symbols):
             if self.log.already_exists('collect_price',symbol, start_date, end_date):
                 log(f"[{symbol}]({start_date or ''}~{end_date or ''})"
                     " 주가 정보가 이미 존재하여 스킵...")
                 continue
-            df: DataFrame = fdr.DataReader(
-                                    symbol=symbol,
-                                    start=start_date,
-                                    end=end_date)
+            try:
+                df: DataFrame = fdr.DataReader(
+                                        symbol=symbol,
+                                        start=start_date,
+                                        end=end_date)
+            except ValueError as e:
+                # log(f"{symbol} 주가 데이터 수집 실패: {str(e)}")
+                continue
             records: dict = df.to_dict(orient='index')
             for date, record in records.items():
-                self.price.upsert_price({
+                documents.append({
                     'symbol': symbol,
                     'date': date.strftime('%Y-%m-%d'),
                     **record,
                 })
             self.log.log_action(
                 'collect_price', symbol, start_date, end_date)
+        log("# 주가 정보 DB 갱신...")
+        self.price.insert_prices(documents)
 
     def _collect_statement(
             self,
@@ -183,6 +192,8 @@ class Quanter:
         sequence = get_quarter_sequence(start_date, end_date)
 
         log('# 재무제표 수집 개시...')
+        documents = []
+
         for symbol in tqdm(symbols):
             if self.log.already_exists(
                     'collect_statement',
@@ -196,13 +207,13 @@ class Quanter:
                                     year=year,
                                     quarter=quarter)
                 if None in [*report.values()]:
-                    log(
-                        "정상적으로 재무제표가 수집되지 않았으므로 스킵함.->"
-                        f"({symbol},{year},{quarter})")
                     continue
-                self.statement.upsert_statement(report)
+                documents.append(report)
             self.log.log_action(
                 'collect_statement', symbol, start_date, end_date)
+
+        log("# 재무제표 정보 DB 갱신...")
+        self.statement.insert_statements(documents)
 
     def _collect_factor(
             self,
@@ -229,6 +240,8 @@ class Quanter:
         }
 
         log('# 가치지표 팩터 수집 개시...')
+        documents = []
+
         for symbol in tqdm(symbols):
             if self.log.already_exists(
                     'collect_factor',
@@ -245,9 +258,13 @@ class Quanter:
                 price = price_dict[target]
                 statement = statement_dict[target]
                 report = self.factor_collector.collect_factor(price, statement)
-                self.factor.upsert_factor(report)
+                documents.append(report)
+
             self.log.log_action(
                 'collect_factor', symbol, start_date, end_date)
+
+        log("# 가치지표 DB 갱신...")
+        self.factor.insert_factors(documents)
 
 
 

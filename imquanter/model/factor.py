@@ -26,7 +26,7 @@ class Factor(BaseModel):
     )
     """
 
-    def upsert_factor(self, document: dict):
+    def insert_factors(self, documents: list):
         query = f"""
         REPLACE INTO {self.table} (
             `symbol`, `year`, `quarter`,
@@ -48,8 +48,9 @@ class Factor(BaseModel):
             %s, %s, %s, %s
         ) 
         """
-        with self._db.cursor() as cursor:
-            cursor.execute(query,(
+        rows = []
+        for document in documents:
+            rows.append((
                 document['symbol'],
                 document['year'],
                 document['quarter'],
@@ -65,3 +66,5 @@ class Factor(BaseModel):
                 document['pcr'],
                 document['combo_4'],
             ))
+        with self._db.cursor() as cursor:
+            cursor.executemany(query, rows)

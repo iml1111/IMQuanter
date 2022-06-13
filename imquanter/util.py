@@ -23,7 +23,7 @@ def get_all_kospi(dry=False):
     results = []
     for record in stocks.values():
         results.append(record['Symbol'])
-    results = list(filter(lambda x: 'H' not in x, res))
+    results = list(filter(lambda x: 'H' not in x, results))
     return results
 
 

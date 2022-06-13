@@ -22,16 +22,10 @@ class Price(BaseModel):
     )
     """
 
-    def upsert_price(self, document: dict):
-        query = f"""
-        REPLACE INTO {self.table} (
-            `symbol`, `date`, `year`, `quarter`,
-            `open`, `close`, `high`, `low`
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
-        """
-        with self._db.cursor() as cursor:
-            cursor.execute(query,(
+    def insert_prices(self, documents: list):
+        rows = []
+        for document in documents:
+            rows.append((
                 document['symbol'],
                 document['date'],
                 document['date'][:4],
@@ -41,6 +35,16 @@ class Price(BaseModel):
                 document['High'],
                 document['Low'],
             ))
+        query = f"""
+        INSERT INTO {self.table} (
+            `symbol`, `date`, `year`, `quarter`,
+            `open`, `close`, `high`, `low`
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
+        """
+        with self._db.cursor() as cursor:
+            cursor.executemany(query, rows)
+
 
     def search_price(
             self,

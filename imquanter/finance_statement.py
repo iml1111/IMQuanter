@@ -18,7 +18,6 @@ class Dart(OpenDartReader):
 
     def get_report(self, symbol: str, year: str, quarter: str):
         """
-        TODO 좀 더 다양한 재무제표 데이터 수집할 거리 생각해보기
         # "CFS":연결재무제표, "OFS":재무제표
         :param symbol: 005930
         :param year: 2022
@@ -36,18 +35,24 @@ class Dart(OpenDartReader):
             bsns_year=year)
 
         if finstates is not None:
-            equity, liability = self._get_자산총계(finstates)
-            assets = equity + liability
-            profit = self._get_당기순이익(finstates)
-            revenue = self._get_매출액(finstates)
-            sales_flow = self._get_영업활동_현금흐름(finstates)
-            general_data = self.get_general_data(finstates)
+            try:
+                equity, liability = self._get_자산총계(finstates)
+                assets = equity + liability
+                profit = self._get_당기순이익(finstates)
+                revenue = self._get_매출액(finstates)
+                sales_flow = self._get_영업활동_현금흐름(finstates)
+                general_data = self.get_general_data(finstates)
+            except TypeError:
+                return {'fail': None}
         else:
             return {'fail': None}
 
         if small is not None:
-            total_stocks = int(
-                small['stock_tot_co'].str.replace(',', ''))
+            try:
+                total_stocks = int(
+                    small['stock_tot_co'].str.replace(',', ''))
+            except ValueError:
+                return {'fail': None}
         else:
             return {'fail': None}
 
@@ -150,10 +155,9 @@ class Dart(OpenDartReader):
 if __name__ == '__main__':
     api_key = 'dff1bc458b903eeac7b7ea1184b7c341414f0ae3'
     samsung = '005930'
-    year = '2021'
-    quarter = 'Q2'
+    year = '2018'
+    quarter = 'Q1'
 
     dart = Dart(api_key=api_key)
     res = dart.get_finstate_all(samsung, year, quarter)
-    res = dart.get_general_data(res)
     pprint(res)
