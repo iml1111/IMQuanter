@@ -1,6 +1,7 @@
 """
 Quanter Main Module
 """
+import time
 from typing import List, Union, Optional
 from pandas import DataFrame
 from pprint import pprint
@@ -192,7 +193,7 @@ class Quanter:
         sequence = get_quarter_sequence(start_date, end_date)
 
         log('# 재무제표 수집 개시...')
-        documents = []
+        #documents = []
 
         for symbol in tqdm(symbols):
             if self.log.already_exists(
@@ -208,12 +209,14 @@ class Quanter:
                                     quarter=quarter)
                 if None in [*report.values()]:
                     continue
-                documents.append(report)
+                #documents.append(report)
+                self.statement.upsert_statement(report)
+                time.sleep(1)
             self.log.log_action(
                 'collect_statement', symbol, start_date, end_date)
 
         log("# 재무제표 정보 DB 갱신...")
-        self.statement.insert_statements(documents)
+        #self.statement.insert_statements(documents)
 
     def _collect_factor(
             self,
