@@ -80,23 +80,7 @@ class Quanter:
         :param verbose: 출력 범위 여부
         :return: 종목 코드 리스트 or 세부 종목 정보 리스트
         """
-        query = f"""
-        SELECT * FROM Statement s
-        LEFT JOIN Factor f 
-        ON 
-            s.symbol = f.symbol 
-            and s.`year` = f.`year` 
-            and s.quarter = f.quarter
-        """
-        if filter:
-            query += f"""
-        WHERE {str(filter)}"""
-        if sort:
-            query += f"""
-        ORDER BY {" ".join(
-            [f'{i[0].lower()} {i[1].upper()}'
-             for i in sort])}"""
-
+        query = self.make_query(filter, sort)
         with self.db.cursor() as cursor:
             cursor.execute(query)
             result = cursor.fetchall()
@@ -111,6 +95,29 @@ class Quanter:
                 symbol_set.add(i['symbol'])
                 symbol_result.append(i['symbol'])
         return symbol_result
+
+    @staticmethod
+    def make_query(
+            filter: Optional[Query] = None,
+            sort: Optional[List[tuple]] = None) -> str:
+        """Query Mapping to Raw SQL Query"""
+        query = f"""
+                SELECT * FROM Statement s
+                LEFT JOIN Factor f 
+                ON 
+                    s.symbol = f.symbol 
+                    and s.`year` = f.`year` 
+                    and s.quarter = f.quarter
+                """
+        if filter:
+            query += f"""
+                WHERE {str(filter)}"""
+        if sort:
+            query += f"""
+                ORDER BY {" ".join(
+                [f'{i[0].lower()} {i[1].upper()}'
+                 for i in sort])}"""
+        return query
 
     def get_price(
             self,
