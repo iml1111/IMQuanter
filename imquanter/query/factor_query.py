@@ -115,7 +115,7 @@ class InventoryTurnover(Metric):
 
 
 class GrossMargin(Metric):
-    METRIC = 'gorss_margin'
+    METRIC = 'gross_margin'
 
 
 class OperMargin(Metric):
