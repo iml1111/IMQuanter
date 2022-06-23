@@ -41,6 +41,7 @@ class FactorCollector:
 
         EPS = dv(s['profit'], s['total_stocks'])
         PER = dv(price, EPS)
+
         BPS = dv(s['equity'], statement['total_stocks'])
         PBR = dv(price, BPS)
         SPS = dv(s['revenue'], s['total_stocks'])
@@ -55,18 +56,22 @@ class FactorCollector:
         NCAV = self.NCAV(s)
         PEG = dv(PER, (EPS * 100))
         GP_A = dv(s['gross_profit'], s['assets'])
+
         # 부채비율
         debt_ratio = dv(s['liability'], s['equity'])
         # 차입금비율
         borrow_ratio = dv((s['short_borrow'] + s['long_borrow']), s['equity'])
+
         # 성장률지표
         revenue_growth = dv((s['revenue'] - s['pre_revenue']), s['pre_revenue'])
         oper_income_growth = dv(
             (s['oper_income'] - s['pre_oper_income']), s['pre_oper_income'])
+
         # 회전율지표
         asset_turnover = dv(s['revenue'], s['assets'])
         trade_receive_turnover = dv(s['revenue'], s['trade_receive'])
         inventory_turnover = dv(s['cost_sales'], s['inventories'])
+
         # 이익률지표
         gross_margin = dv(s['gross_profit'], s['revenue'])
         oper_margin = dv(s['oper_income'], s['revenue'])
