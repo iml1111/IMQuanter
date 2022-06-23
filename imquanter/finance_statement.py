@@ -32,7 +32,6 @@ class Dart(OpenDartReader):
         :param include_general: 기타 데이터 포함여부
         :return: report(dict)
         """
-        print(symbol, year, quarter)
         finstates = self.finstate_all(
             corp=symbol,
             bsns_year=year,
