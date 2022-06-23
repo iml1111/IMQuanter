@@ -48,3 +48,19 @@ class Profit(Metric):
 
 class Stock(Metric):
     METRIC = 'total_stock'
+
+
+class NetDebt(Metric):
+    METRIC = 'net_debt'
+
+
+class CurAssets(Metric):
+    METRIC = 'cur_assets'
+
+
+class GrossProfit(Metric):
+    METRIC = 'gross_profit'
+
+
+class OperIncome(Metric):
+    METRIC = 'oper_income'
