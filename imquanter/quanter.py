@@ -207,7 +207,7 @@ class Quanter:
                                     symbol=symbol,
                                     year=year,
                                     quarter=quarter)
-                if None in [*report.values()]:
+                if 'fail' in report:
                     continue
                 self.statement.upsert_statement(report)
             self.log.log_action(
