@@ -44,27 +44,32 @@ class Dart(OpenDartReader):
             bsns_year=year)
 
         if finstates is not None:
-            try:
-                equity, liability = self._get_자산총계(finstates)
-                assets = equity + liability
-                profit = self._get_당기순이익(finstates)
-                revenue = self._get_매출액(finstates)
-                sales_flow = self._get_영업활동_현금흐름(finstates)
-                if include_general:
-                    general_data = self.get_general_data(finstates)
-                else:
-                    general_data = {}
-            except TypeError:
-                return {'fail': None}
+            equity, liability = self._get_자산총계(finstates)
+            assets = equity + liability
+            profit = self._get_당기순이익(finstates)
+            revenue = self._get_매출액(finstates)
+            pre_revenue = self._get_전기_매출액(finstates)
+            oper_incomes = self._get_영업이익(finstates)
+            sales_flow = self._get_영업활동_현금흐름(finstates)
+            net_debt = self._get_순차입금(finstates)
+            cur_assets = self._get_유동자산(finstates)
+            gross_profit = self._get_매출총이익(finstates)
+            short_borrow, long_borrow = (
+                self._get_장단기차입금(finstates))
+            trade_receive = self._get_매출채권(finstates)
+            inventories = self._get_재고자산(finstates)
+            cost_sales = self._get_매출원가(finstates)
+
+            if include_general:
+                general_data = self.get_general_data(finstates)
+            else:
+                general_data = {}
         else:
             return {'fail': None}
 
         if small is not None:
-            try:
-                total_stocks = int(
-                    small['stock_tot_co'].str.replace(',', ''))
-            except ValueError:
-                return {'fail': None}
+            total_stocks = int(
+                small['stock_tot_co'].str.replace(',', ''))
         else:
             return {'fail': None}
 
@@ -76,9 +81,20 @@ class Dart(OpenDartReader):
             'equity': equity, # 자본 총계
             'liability': liability, # 부채 총계
             'revenue': revenue, # 매출액
-            'sales_flow': sales_flow, # 영업활동 현금흐름
+            'pre_revenue': pre_revenue, # 전기 매출액
+            'sales_flow': sales_flow, # 영업활동 현금흐름, EBITDA
             'profit': profit, # 당기 순이익
             'total_stocks': total_stocks, # 총 발행 주식수
+            'net_debt': net_debt, # 순차입금
+            'cur_assets': cur_assets, # 유동자산
+            'gross_profit': gross_profit, # 매출 총이익
+            'short_borrow': short_borrow, # 단기차입금
+            'long_borrow': long_borrow, # 장기차입금
+            'pre_oper_income': oper_incomes[0], # 전기 영업이익
+            'oper_income': oper_incomes[1], # 당기 영업이익
+            'trade_receive': trade_receive, # 매출채권
+            'inventories': inventories, # 재고자산
+            'cost_sales': cost_sales, # 매출원가
             **general_data, # 그 외 나머지 데이터들
         }
 
@@ -89,8 +105,8 @@ class Dart(OpenDartReader):
             bsns_year=year,
             fs_div='CFS',
             reprt_code=q2code[quarter])
-        #return finstates.to_dict(orient='index')
-        return finstates
+        return finstates.to_dict(orient='index')
+        #return finstates
 
     def get_general_data(self, finstates):
         """그외의 재무제표 데이터를 일단 수집"""
@@ -143,6 +159,34 @@ class Dart(OpenDartReader):
                 ].replace(",", ""))
         return revenue
 
+    def _get_전기_매출액(self, finstate):
+        try:
+            return int( # 전기 매출액
+                    finstate.loc[
+                        finstate['sj_div'].isin(['IS'])
+                        & finstate['account_id'].isin(
+                            ['ifrs-full_Revenue']),
+                        'frmtrm_amount'
+                    ].replace(",", ""))
+        except ValueError:
+            return int(  # 전기 매출액
+                finstate.loc[
+                    finstate['sj_div'].isin(['IS'])
+                    & finstate['account_id'].isin(
+                        ['ifrs-full_Revenue']),
+                    'frmtrm_q_amount'
+                ].replace(",", ""))
+
+    def _get_매출총이익(self, finstate):
+        revenue = int( # 당기 매출 총이익
+                finstate.loc[
+                    finstate['sj_div'].isin(['IS'])
+                    & finstate['account_id'].isin(
+                        ['ifrs-full_GrossProfit']),
+                    'thstrm_amount'
+                ].replace(",", ""))
+        return revenue
+
     def _get_당기순이익(self, finstate):
         profit = int(
             finstate.loc[
@@ -163,11 +207,108 @@ class Dart(OpenDartReader):
             ].replace(",", ""))
         return sales_flow
 
+    def _get_순차입금(self, finstate):
+        순차입금 = finstate.loc[
+                finstate['sj_div'].isin(['CF'])
+                & finstate['account_nm'].isin(
+                    ['단기차입금의 순증가(감소)']),
+                'thstrm_amount'
+            ].replace(",", "")
+        if isinstance(순차입금, str):
+            return int(순차입금) * (-1)
+        else:
+            return 0
+
+    def _get_유동자산(self, finstate):
+        a = finstate.loc[
+                finstate['sj_div'].isin(['CF'])
+                & finstate['account_id'].isin(
+                    ['ifrs-full_CurrentAssets']),
+                'thstrm_amount'
+            ].replace(",", "")
+        if isinstance(a, str):
+            return int(a)
+        else:
+            return 0
+
+    def _get_장단기차입금(self, finstate):
+        단기차입금 = int(
+            finstate.loc[
+                finstate['sj_div'].isin(['BS'])
+                & finstate['account_id'].isin(
+                    ['ifrs-full_ShorttermBorrowings']),
+                'thstrm_amount'
+            ].replace(",", ""))
+        장기차입금 = int(
+            finstate.loc[
+                finstate['sj_div'].isin(['BS'])
+                & finstate['account_id'].isin(
+                    ['dart_LongTermBorrowingsGross']),
+                'thstrm_amount'
+            ].replace(",", ""))
+        return 단기차입금, 장기차입금
+
+    def _get_영업이익(self, finstate):
+        try:
+            전기_영업이익 = int(
+                finstate.loc[
+                    finstate['sj_div'].isin(['IS'])
+                    & finstate['account_id'].isin(
+                        ['dart_OperatingIncomeLoss']),
+                    'frmtrm_amount'
+                ].replace(",", ""))
+        except ValueError:
+            전기_영업이익 = int(
+                finstate.loc[
+                    finstate['sj_div'].isin(['IS'])
+                    & finstate['account_id'].isin(
+                        ['dart_OperatingIncomeLoss']),
+                    'frmtrm_q_amount'
+                ].replace(",", ""))
+        당기_영업이익 = int(
+            finstate.loc[
+                finstate['sj_div'].isin(['IS'])
+                & finstate['account_id'].isin(
+                    ['dart_OperatingIncomeLoss']),
+                'thstrm_amount'
+            ].replace(",", ""))
+        return 전기_영업이익, 당기_영업이익
+
+    def _get_매출채권(self, finstate):
+        return int(
+            finstate.loc[
+                finstate['sj_div'].isin(['BS'])
+                & finstate['account_id'].isin(
+                    ['dart_ShortTermTradeReceivable']),
+                'thstrm_amount'
+            ].replace(",", ""))
+
+    def _get_매출원가(self, finstate):
+        return int(
+            finstate.loc[
+                finstate['sj_div'].isin(['IS'])
+                & finstate['account_id'].isin(
+                    ['ifrs-full_CostOfSales']),
+                'thstrm_amount'
+            ].replace(",", ""))
+
+    def _get_재고자산(self, finstate):
+        a = finstate.loc[
+                finstate['sj_div'].isin(['IS'])
+                & finstate['account_id'].isin(
+                    ['ifrs-full_Inventories']),
+                'thstrm_amount'
+            ].replace(",", "")
+        if isinstance(a, str):
+            return int(a)
+        else:
+            return 0
+
 
 if __name__ == '__main__':
     api_key = 'dff1bc458b903eeac7b7ea1184b7c341414f0ae3'
     samsung = '005930'
-    year = '2018'
+    year = '2020'
     quarter = 'Q1'
 
     dart = Dart(api_key=api_key)

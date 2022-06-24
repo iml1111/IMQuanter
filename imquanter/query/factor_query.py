@@ -64,3 +64,63 @@ class PCR(Metric):
 
 class Combo4(Metric):
     METRIC = 'combo_4'
+
+
+class EV_EVITDA(Metric):
+    METRIC = 'ev_evitda'
+
+
+class EV_Sales(Metric):
+    METRIC = 'ev_sales'
+
+
+class NCAV(Metric):
+    METRIC = 'ncav'
+
+
+class PEG(Metric):
+    METRIC = 'peg'
+
+
+class GP_A(Metric):
+    METRIC = 'gp_a'
+
+
+class DebtRatio(Metric):
+    METRIC = 'debt_ratio'
+
+
+class BorrowRatio(Metric):
+    METRIC = 'borrow_ratio'
+
+
+class RevenueGrowth(Metric):
+    METRIC = 'revenue_growth'
+
+
+class OperIncomeGrowth(Metric):
+    METRIC = 'oper_income_growth'
+
+
+class AssetTurnover(Metric):
+    METRIC = 'asset_turnover'
+
+
+class TradeReceiveTurnover(Metric):
+    METRIC = 'trade_receive_turnover'
+
+
+class InventoryTurnover(Metric):
+    METRIC = 'inventory_turnover'
+
+
+class GrossMargin(Metric):
+    METRIC = 'gross_margin'
+
+
+class OperMargin(Metric):
+    METRIC = 'oper_margin'
+
+
+class ProfitMargin(Metric):
+    METRIC = 'profit_margin'
